@@ -1,0 +1,8 @@
+name: dynamos
+prefixes:
+  - /policyEnforcer/agreements/   # authorisation agreements per data steward
+  - /archetypes/                  # archetype definitions
+  - /requestTypes/                # request-type definitions
+  - /microservices/               # microservice-chain metadata
+  - /datasets/                    # dataset definitions
+  - /agents/jobs/                 # composition records written per approved exchange

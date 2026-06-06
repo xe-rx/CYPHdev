@@ -1,0 +1,7 @@
+# Engine prefix profile for the KJ test harness (KJ/kj_demo.py).
+#
+# KJ writes deterministic etcd lifecycle events under /demo/, so the engine can be exercised
+# against a local single-node etcd without DYNAMOS running.
+name: kj
+prefixes:
+  - /demo/
