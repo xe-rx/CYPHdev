@@ -28,6 +28,7 @@ func Log(dir string, pub ed25519.PublicKey) (Result, error) {
 	}
 
 	var prev [32]byte
+	var lastRev int64
 	heads := map[[32]byte]bool{}
 	ei, gi := 0, 0
 	for b, err := range engine.ReadBlocks(dir) {
@@ -36,6 +37,9 @@ func Log(dir string, pub ed25519.PublicKey) (Result, error) {
 		}
 		if b.PrevHash != prev {
 			return res, fmt.Errorf("block %d (rev %d): prev_hash does not link to the previous block", res.Blocks, b.Revision)
+		}
+		if b.Revision < lastRev {
+			return res, fmt.Errorf("block %d (rev %d): revision precedes previous block revision %d", res.Blocks, b.Revision, lastRev)
 		}
 		switch b.Kind {
 		case engine.EntryEvent:
@@ -67,11 +71,19 @@ func Log(dir string, pub ed25519.PublicKey) (Result, error) {
 		}
 		h := b.Hash()
 		prev = h
+		lastRev = b.Revision
 		heads[h] = true
 		res.Blocks++
 	}
 	res.Events = ei
 	res.Gaps = gi
+
+	if ei != len(events) {
+		return res, fmt.Errorf("event log holds %d events but %d are committed to blocks", len(events), ei)
+	}
+	if gi != len(gaps) {
+		return res, fmt.Errorf("gap log holds %d gaps but %d are committed to blocks", len(gaps), gi)
+	}
 
 	for c, err := range engine.ReadCheckpoints(dir) {
 		if err != nil {

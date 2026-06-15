@@ -35,7 +35,7 @@ func TestGapBlockRestart(t *testing.T) {
 	}
 
 	// Restart must recover cleanly despite the gap block (no 1:1 event:block alignment).
-	rtree, rchain, startRev, resumed, err := resume(dir)
+	rtree, rchain, _, startRev, resumed, err := resume(dir)
 	if err != nil {
 		t.Fatalf("recover with gap in log: %v", err)
 	}

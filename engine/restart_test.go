@@ -28,7 +28,7 @@ func TestResumeChain(t *testing.T) {
 	last := commit(t, dir, t1, c1, s1, Event{Kind: Put, Key: "/b", Value: []byte("2"), ModRevision: 2})
 	s1.Close()
 
-	tree, chain, startRev, resumed, err := resume(dir)
+	tree, chain, _, startRev, resumed, err := resume(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -62,7 +62,7 @@ func TestResumeDropsOrphan(t *testing.T) {
 	f.WriteString(`{"kind":"put","key":"/orphan","value":"Wg==","mod_revision":2}` + "\n")
 	f.Close()
 
-	_, chain, startRev, resumed, err := resume(dir)
+	_, chain, _, startRev, resumed, err := resume(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,14 +91,14 @@ func TestResumeRejectsCorruption(t *testing.T) {
 	}
 	os.WriteFile(filepath.Join(dir, eventsFile), firstLine, 0o644)
 
-	if _, _, _, _, err := resume(dir); err == nil {
+	if _, _, _, _, _, err := resume(dir); err == nil {
 		t.Fatal("expected corruption error when blocks outnumber events")
 	}
 }
 
 func TestResumeFreshDir(t *testing.T) {
 	dir := t.TempDir()
-	_, _, startRev, resumed, err := resume(dir)
+	_, _, _, startRev, resumed, err := resume(dir)
 	if err != nil {
 		t.Fatal(err)
 	}

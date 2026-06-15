@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"bytes"
 	"cmp"
 	"context"
 	"crypto/ed25519"
@@ -24,6 +25,7 @@ type Engine struct {
 	chain  *Chain
 	store  *Store
 	signer *Signer
+	keys   map[string][]byte
 
 	resumed  bool
 	startRev int64
@@ -33,7 +35,7 @@ type Engine struct {
 }
 
 func New(cfg Config, priv ed25519.PrivateKey) (*Engine, error) {
-	tree, chain, startRev, resumed, err := resume(cfg.DataDir)
+	tree, chain, keys, startRev, resumed, err := resume(cfg.DataDir)
 	if err != nil {
 		return nil, err
 	}
@@ -53,6 +55,7 @@ func New(cfg Config, priv ed25519.PrivateKey) (*Engine, error) {
 		chain:          chain,
 		store:          store,
 		signer:         NewSigner(priv),
+		keys:           keys,
 		resumed:        resumed,
 		startRev:       startRev,
 		lastCheckpoint: time.Now(),
@@ -82,13 +85,9 @@ func (e *Engine) Run(ctx context.Context) error {
 		case ctx.Err() != nil:
 			return ctx.Err()
 		case errors.Is(err, ErrCompacted):
-			from := e.chain.LastRev()
-			to, cerr := e.catchUp(ctx)
-			if cerr != nil {
-				return cerr
-			}
-			if gerr := e.recordGap(from, to); gerr != nil {
-				return gerr
+			to, rerr := e.recoverFromGap(ctx, e.chain.LastRev())
+			if rerr != nil {
+				return rerr
 			}
 			startRev = to
 		default:
@@ -134,6 +133,46 @@ func (e *Engine) catchUp(ctx context.Context) (int64, error) {
 	return rev, nil
 }
 
+func (e *Engine) recoverFromGap(ctx context.Context, from int64) (int64, error) {
+	snap, to, err := e.src.Snapshot(ctx)
+	if err != nil {
+		return 0, err
+	}
+	if err := e.recordGap(from, to); err != nil {
+		return 0, err
+	}
+
+	seen := make(map[string]struct{}, len(snap))
+	for _, s := range snap {
+		seen[s.Key] = struct{}{}
+		if cur, ok := e.keys[s.Key]; ok && bytes.Equal(cur, s.Value) {
+			continue
+		}
+		if err := e.commitAt(Snapshot, s.Key, s.Value, to); err != nil {
+			return 0, err
+		}
+	}
+
+	var gone []string
+	for k := range e.keys {
+		if _, ok := seen[k]; !ok {
+			gone = append(gone, k)
+		}
+	}
+	slices.Sort(gone)
+	for _, k := range gone {
+		if err := e.commitAt(Delete, k, nil, to); err != nil {
+			return 0, err
+		}
+	}
+
+	return to, nil
+}
+
+func (e *Engine) commitAt(kind EventKind, key string, value []byte, rev int64) error {
+	return e.process(Event{Kind: kind, Key: key, Value: value, ModRevision: rev})
+}
+
 func (e *Engine) recordGap(from, to int64) error {
 	g := Gap{From: from, To: to}
 	b, err := e.chain.AppendGap(g, e.tree.Root(), time.Now().UTC())
@@ -154,6 +193,7 @@ func (e *Engine) process(ev Event) error {
 	if err := e.tree.Apply(ev); err != nil {
 		return err
 	}
+	applyKeys(e.keys, ev)
 	b, err := e.chain.Append(ev, e.tree.Root(), time.Now().UTC())
 	if err != nil {
 		return err

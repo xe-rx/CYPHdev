@@ -37,7 +37,7 @@ func ProveAt(dir, key string, rev int64) (Proof, error) {
 		return Proof{}, fmt.Errorf("engine: no committed state at or before revision %d", rev)
 	}
 
-	tree, err := rebuildTree(dir, nevents, govRoot)
+	tree, _, err := rebuildTree(dir, nevents, govRoot)
 	if err != nil {
 		return Proof{}, err
 	}
