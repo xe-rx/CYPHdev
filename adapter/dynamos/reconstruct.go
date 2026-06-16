@@ -56,6 +56,9 @@ func Reconstruct(dir string, window time.Duration) ([]Finding, error) {
 
 	findings := make([]Finding, 0, len(exchanges))
 	for _, x := range exchanges {
+		if x.Role == "computeProvider" {
+			continue
+		}
 		// (scope) only checks the agreement for this steward
 		key := agreementKey(x.Steward)
 		rc := lastAtOrBefore(changes[key], x.Revision)

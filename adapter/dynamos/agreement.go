@@ -34,6 +34,16 @@ func (a Agreement) Permits(user, archetype string) bool {
 	if !ok {
 		return false
 	}
+	supported := false
+	for _, s := range a.Archetypes {
+		if s == archetype {
+			supported = true
+			break
+		}
+	}
+	if !supported {
+		return false
+	}
 	for _, allowed := range rel.AllowedArchetypes {
 		if allowed == archetype {
 			return true
