@@ -8,9 +8,12 @@ import (
 // rebuildTree reconstructs the SMT by replaying the first nEvents events from the log and
 // checks the result against the root the chain committed at that point. Replay aligns to
 // event-blocks only; gap blocks commit no event.
-func rebuildTree(dir string, nEvents int64, wantRoot []byte) (*Tree, map[string][]byte, error) {
+func rebuildTree(dir string, nEvents int64, wantRoot []byte, wantKeys bool) (*Tree, map[string][]byte, error) {
 	tree := NewTree()
-	keys := map[string][]byte{}
+	var keys map[string][]byte
+	if wantKeys {
+		keys = map[string][]byte{}
+	}
 	var applied int64
 	for e, err := range ReadEvents(dir) {
 		if err != nil || applied >= nEvents {
@@ -19,7 +22,9 @@ func rebuildTree(dir string, nEvents int64, wantRoot []byte) (*Tree, map[string]
 		if err := tree.Apply(e); err != nil {
 			return nil, nil, err
 		}
-		applyKeys(keys, e)
+		if wantKeys {
+			applyKeys(keys, e)
+		}
 		applied++
 	}
 	if applied < nEvents {

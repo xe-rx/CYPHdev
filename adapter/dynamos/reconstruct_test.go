@@ -59,10 +59,10 @@ func writeLog(t *testing.T, dir string, priv ed25519.PrivateKey, recs []rec) {
 
 func scenario(t *testing.T) []rec {
 	base := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
-	agr1 := mustJSON(t, Agreement{Name: "UVA", Relations: map[string]Relation{
+	agr1 := mustJSON(t, Agreement{Name: "UVA", Archetypes: []string{"computeToData", "dataThroughTtp"}, Relations: map[string]Relation{
 		"alice": {AllowedArchetypes: []string{"computeToData"}},
 	}})
-	agr2 := mustJSON(t, Agreement{Name: "UVA", Relations: map[string]Relation{
+	agr2 := mustJSON(t, Agreement{Name: "UVA", Archetypes: []string{"computeToData", "dataThroughTtp"}, Relations: map[string]Relation{
 		"alice": {AllowedArchetypes: []string{"computeToData"}},
 		"carol": {AllowedArchetypes: []string{"dataThroughTtp"}},
 	}})

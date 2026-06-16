@@ -21,7 +21,7 @@ func resume(dir string) (*Tree, *Chain, map[string][]byte, int64, bool, error) {
 		return NewTree(), NewChain(), map[string][]byte{}, 0, false, nil
 	}
 
-	tree, keys, err := rebuildTree(dir, nevents, last.Root)
+	tree, keys, err := rebuildTree(dir, nevents, last.Root, true)
 	if err != nil {
 		return nil, nil, nil, 0, false, err
 	}

@@ -123,7 +123,7 @@ func agreementChanges(dir string) (map[string][]int64, error) {
 		if err != nil {
 			return nil, err
 		}
-		if e.Kind != engine.Put && e.Kind != engine.Snapshot {
+		if e.Kind != engine.Put && e.Kind != engine.Snapshot && e.Kind != engine.Delete {
 			continue
 		}
 		if !strings.HasPrefix(e.Key, agreementPrefix) {
